@@ -1,11 +1,91 @@
-import { Users, MapPin, AlertTriangle, FileText, Activity, Filter } from "lucide-react";
+import { Users, MapPin, AlertTriangle, FileText, Activity, Filter, Clock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { DashboardStats } from "@/components/DashboardStats";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import MapComponent from "@/components/MapComponent";
+import { useEmergencyAlerts } from "@/hooks/useEmergencyAlerts";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+
+interface TouristLocation {
+  id: string;
+  latitude: number;
+  longitude: number;
+  user_id: string;
+  timestamp: string;
+}
 
 export const AuthorityDashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { alerts, acknowledgeAlert, resolveAlert, activeAlertsCount } = useEmergencyAlerts();
+  const [touristLocations, setTouristLocations] = useState<TouristLocation[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+
+  // Fetch tourist locations
+  const fetchTouristLocations = async () => {
+    setIsLoadingLocations(true);
+    try {
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setTouristLocations(data || []);
+    } catch (error) {
+      console.error('Error fetching tourist locations:', error);
+    } finally {
+      setIsLoadingLocations(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchTouristLocations();
+    }
+  }, [user]);
+
+  // Set up real-time subscription for locations
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('tourist-locations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'locations',
+        },
+        (payload) => {
+          console.log('New location update:', payload);
+          fetchTouristLocations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  if (!user) {
+    return null;
+  }
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header showEmergencyButton={false} />
@@ -38,24 +118,32 @@ export const AuthorityDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="bg-primary/5 rounded-lg h-80 flex items-center justify-center border-2 border-dashed border-primary/20">
-                <div className="text-center">
-                  <MapPin className="w-12 h-12 text-primary mx-auto mb-4" />
-                  <p className="text-muted-foreground">Interactive map will be displayed here</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Showing tourist clusters, safety zones, and active alerts
-                  </p>
-                </div>
+              <div className="h-80">
+                <MapComponent 
+                  emergencyAlerts={alerts.map(alert => ({
+                    id: alert.id,
+                    latitude: alert.latitude,
+                    longitude: alert.longitude,
+                    alert_type: alert.alert_type,
+                    status: alert.status,
+                  }))}
+                  touristLocations={touristLocations.map(location => ({
+                    id: location.id,
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    user_id: location.user_id,
+                  }))}
+                  showControls={true}
+                />
               </div>
               <div className="flex justify-between mt-4">
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filter View
-                </Button>
-                <Button size="sm" className="bg-gradient-primary hover:bg-primary/90">
+                <Button variant="outline" size="sm" onClick={fetchTouristLocations}>
                   <Activity className="w-4 h-4 mr-2" />
-                  Live Mode
+                  Refresh Data
                 </Button>
+                <div className="text-sm text-muted-foreground">
+                  {isLoadingLocations ? 'Loading...' : `${touristLocations.length} locations • ${activeAlertsCount} active alerts`}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -73,38 +161,55 @@ export const AuthorityDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="border-l-4 border-emergency pl-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge className="bg-emergency/10 text-emergency border-emergency/20">
-                      High Priority
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">5 min ago</span>
+                {alerts.length > 0 ? (
+                  alerts.slice(0, 5).map((alert) => (
+                    <div key={alert.id} className="border-l-4 border-emergency pl-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className={`${
+                          alert.status === 'active' ? 'bg-emergency/10 text-emergency border-emergency/20' :
+                          alert.status === 'acknowledged' ? 'bg-warning/10 text-warning border-warning/20' :
+                          'bg-primary/10 text-primary border-primary/20'
+                        }`}>
+                          {alert.status === 'active' ? 'High Priority' : 
+                           alert.status === 'acknowledged' ? 'Acknowledged' : 'Resolved'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(alert.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium">
+                        {alert.alert_type.charAt(0).toUpperCase() + alert.alert_type.slice(1)} Alert
+                      </p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Location: {alert.latitude.toFixed(4)}, {alert.longitude.toFixed(4)}
+                      </p>
+                      {alert.status === 'active' && (
+                        <div className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => acknowledgeAlert(alert.id)}
+                          >
+                            Acknowledge
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => resolveAlert(alert.id)}
+                            className="bg-gradient-primary hover:bg-primary/90"
+                          >
+                            Resolve
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No active alerts</p>
+                    <p className="text-xs">All clear in your monitoring area</p>
                   </div>
-                  <p className="text-sm font-medium">Tourist missing in Cherrapunji</p>
-                  <p className="text-xs text-muted-foreground">Last seen: Living Root Bridge</p>
-                </div>
-
-                <div className="border-l-4 border-warning pl-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge className="bg-warning/10 text-warning border-warning/20">
-                      Medium
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">15 min ago</span>
-                  </div>
-                  <p className="text-sm font-medium">Weather alert - Heavy rain</p>
-                  <p className="text-xs text-muted-foreground">Affecting 23 tourists</p>
-                </div>
-
-                <div className="border-l-4 border-primary pl-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge className="bg-primary/10 text-primary border-primary/20">
-                      Info
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">1 hour ago</span>
-                  </div>
-                  <p className="text-sm font-medium">Large group check-in</p>
-                  <p className="text-xs text-muted-foreground">15 tourists at Umiam Lake</p>
-                </div>
+                )}
               </div>
               
               <Button variant="outline" className="w-full mt-4">
