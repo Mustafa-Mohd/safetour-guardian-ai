@@ -57,6 +57,30 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // SafeSafar Colors
+        emergency: {
+          DEFAULT: "hsl(var(--emergency))",
+          foreground: "hsl(var(--emergency-foreground))",
+        },
+        safety: {
+          DEFAULT: "hsl(var(--safety))",
+          foreground: "hsl(var(--safety-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-emergency": "var(--gradient-emergency)",
+        "gradient-safety": "var(--gradient-safety)",
+        "gradient-hero": "var(--gradient-hero)",
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        emergency: "var(--shadow-emergency)",
+        success: "var(--shadow-success)",
       },
       borderRadius: {
         lg: "var(--radius)",
