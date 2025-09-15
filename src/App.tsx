@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import NotFoundPage from "./pages/NotFound";
 import { Auth } from "./pages/Auth";
 import { TouristDashboard } from "./pages/TouristDashboard";
 import { AuthorityDashboard } from "./pages/AuthorityDashboard";
@@ -24,8 +24,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/tourist" element={<TouristDashboard />} />
             <Route path="/authority" element={<AuthorityDashboard />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
