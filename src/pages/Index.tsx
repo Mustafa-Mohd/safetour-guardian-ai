@@ -19,7 +19,7 @@ const Index = () => {
     }
   }, [user, navigate]);
 
-  const handleUserTypeSelection = (type: "tourist" | "authority") => {
+  const handleUserTypeSelection = (type: "tourist" | "authority" | "police") => {
     if (user) {
       // If authenticated, go directly to dashboard
       navigate(`/${type}`);

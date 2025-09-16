@@ -8,6 +8,7 @@ import NotFoundPage from "./pages/NotFound";
 import { Auth } from "./pages/Auth";
 import { TouristDashboard } from "./pages/TouristDashboard";
 import { AuthorityDashboard } from "./pages/AuthorityDashboard";
+import { PoliceDashboard } from "./pages/PoliceDashboard";
 import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/tourist" element={<TouristDashboard />} />
             <Route path="/authority" element={<AuthorityDashboard />} />
+            <Route path="/police" element={<PoliceDashboard />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>

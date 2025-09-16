@@ -11,13 +11,23 @@ interface StatCardProps {
 }
 
 const StatCard = ({ title, value, subtitle, icon, trend, colorScheme }: StatCardProps) => {
+  const getIconBgClass = () => {
+    switch (colorScheme) {
+      case "primary": return "bg-primary/10";
+      case "safety": return "bg-emerald-500/10";
+      case "warning": return "bg-amber-500/10";
+      case "emergency": return "bg-red-500/10";
+      default: return "bg-primary/10";
+    }
+  };
+
   return (
     <Card className="shadow-soft border-0 bg-card/80 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div className={`p-2 rounded-lg bg-${colorScheme}/10`}>
+        <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
           {icon}
         </div>
       </CardHeader>
@@ -26,8 +36,8 @@ const StatCard = ({ title, value, subtitle, icon, trend, colorScheme }: StatCard
         <div className="flex items-center text-xs text-muted-foreground mt-1">
           {trend && (
             <TrendingUp className={`w-3 h-3 mr-1 ${
-              trend === "up" ? "text-safety" : 
-              trend === "down" ? "text-emergency" : 
+              trend === "up" ? "text-emerald-500" : 
+              trend === "down" ? "text-red-500" : 
               "text-muted-foreground"
             }`} />
           )}

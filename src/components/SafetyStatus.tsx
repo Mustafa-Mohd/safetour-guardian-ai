@@ -18,13 +18,13 @@ export const SafetyStatus = ({
   const getSafetyColor = () => {
     switch (safetyLevel) {
       case "safe":
-        return "safety";
+        return "bg-emerald-500/10 text-emerald-700 border-emerald-200";
       case "moderate":
-        return "warning";
+        return "bg-amber-500/10 text-amber-700 border-amber-200";
       case "high-risk":
-        return "emergency";
+        return "bg-red-500/10 text-red-700 border-red-200";
       default:
-        return "safety";
+        return "bg-emerald-500/10 text-emerald-700 border-emerald-200";
     }
   };
 
@@ -50,7 +50,7 @@ export const SafetyStatus = ({
             Safety Status
           </CardTitle>
           <Badge 
-            className={`bg-gradient-${getSafetyColor()} text-${getSafetyColor()}-foreground border-0`}
+            className={getSafetyColor()}
           >
             {getSafetyText()}
           </Badge>
