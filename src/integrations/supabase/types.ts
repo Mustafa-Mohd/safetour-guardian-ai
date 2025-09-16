@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      digital_ids: {
+        Row: {
+          blockchain_hash: string
+          created_at: string
+          id: string
+          issued_on: string
+          user_id: string
+          valid_until: string
+        }
+        Insert: {
+          blockchain_hash: string
+          created_at?: string
+          id?: string
+          issued_on?: string
+          user_id: string
+          valid_until: string
+        }
+        Update: {
+          blockchain_hash?: string
+          created_at?: string
+          id?: string
+          issued_on?: string
+          user_id?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
       emergency_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -59,6 +86,36 @@ export type Database = {
         }
         Relationships: []
       }
+      incident_reports: {
+        Row: {
+          created_at: string
+          id: string
+          incident_details_json: Json
+          status: string
+          trip_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          incident_details_json: Json
+          status?: string
+          trip_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          incident_details_json?: Json
+          status?: string
+          trip_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       locations: {
         Row: {
           accuracy: number | null
@@ -68,6 +125,7 @@ export type Database = {
           location_name: string | null
           longitude: number
           timestamp: string
+          trip_id: string | null
           user_id: string
         }
         Insert: {
@@ -78,6 +136,7 @@ export type Database = {
           location_name?: string | null
           longitude: number
           timestamp?: string
+          trip_id?: string | null
           user_id: string
         }
         Update: {
@@ -88,6 +147,7 @@ export type Database = {
           location_name?: string | null
           longitude?: number
           timestamp?: string
+          trip_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -95,54 +155,144 @@ export type Database = {
       profiles: {
         Row: {
           aadhaar_number: string | null
+          badge_id: string | null
           created_at: string
+          department: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           first_name: string | null
           id: string
+          kyc_status: string | null
           language_preference: string | null
           last_name: string | null
           location_sharing_enabled: boolean | null
           notifications_enabled: boolean | null
           passport_number: string | null
           phone: string | null
+          privacy_settings: Json | null
           updated_at: string
           user_id: string
           user_type: string | null
         }
         Insert: {
           aadhaar_number?: string | null
+          badge_id?: string | null
           created_at?: string
+          department?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name?: string | null
           id?: string
+          kyc_status?: string | null
           language_preference?: string | null
           last_name?: string | null
           location_sharing_enabled?: boolean | null
           notifications_enabled?: boolean | null
           passport_number?: string | null
           phone?: string | null
+          privacy_settings?: Json | null
           updated_at?: string
           user_id: string
           user_type?: string | null
         }
         Update: {
           aadhaar_number?: string | null
+          badge_id?: string | null
           created_at?: string
+          department?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name?: string | null
           id?: string
+          kyc_status?: string | null
           language_preference?: string | null
           last_name?: string | null
           location_sharing_enabled?: boolean | null
           notifications_enabled?: boolean | null
           passport_number?: string | null
           phone?: string | null
+          privacy_settings?: Json | null
           updated_at?: string
           user_id?: string
           user_type?: string | null
+        }
+        Relationships: []
+      }
+      safety_zones: {
+        Row: {
+          center_lat: number | null
+          center_lng: number | null
+          coordinates: Json
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          radius: number | null
+          updated_at: string
+          zone_type: string
+        }
+        Insert: {
+          center_lat?: number | null
+          center_lng?: number | null
+          coordinates: Json
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          radius?: number | null
+          updated_at?: string
+          zone_type: string
+        }
+        Update: {
+          center_lat?: number | null
+          center_lng?: number | null
+          coordinates?: Json
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          radius?: number | null
+          updated_at?: string
+          zone_type?: string
+        }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          itinerary_json: Json | null
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          itinerary_json?: Json | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          itinerary_json?: Json | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

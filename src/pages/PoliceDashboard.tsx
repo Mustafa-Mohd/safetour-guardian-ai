@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import MapComponent from "@/components/MapComponent";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
+import SafetyZonesManager from "@/components/SafetyZonesManager";
+import { useSafetyZones } from "@/hooks/useSafetyZones";
 import { 
   Shield, 
   Users, 
@@ -32,8 +34,10 @@ export const PoliceDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { alerts, acknowledgeAlert, resolveAlert, activeAlertsCount } = useEmergencyAlerts();
+  const { safetyZones } = useSafetyZones();
   const [touristLocations, setTouristLocations] = useState<TouristLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -183,7 +187,22 @@ export const PoliceDashboard = () => {
               <div className="h-[400px] rounded-lg overflow-hidden">
                 <MapComponent 
                   touristLocations={touristLocations}
-                  emergencyAlerts={alerts}
+                  emergencyAlerts={alerts.map(alert => ({
+                    id: alert.id,
+                    latitude: Number(alert.latitude),
+                    longitude: Number(alert.longitude),
+                    alert_type: alert.alert_type,
+                    status: alert.status,
+                  }))}
+                  safetyZones={safetyZones.map(zone => ({
+                    id: zone.id,
+                    name: zone.name,
+                    zone_type: zone.zone_type,
+                    center_lat: zone.center_lat,
+                    center_lng: zone.center_lng,
+                    radius: zone.radius,
+                  }))}
+                  onLocationUpdate={(lat, lng) => setSelectedLocation({ lat, lng })}
                   showControls={true}
                 />
               </div>
@@ -196,97 +215,85 @@ export const PoliceDashboard = () => {
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   <span>Emergency Alerts ({activeAlerts.length})</span>
                 </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span>Safety Zones ({safetyZones.length})</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Alerts Panel */}
-          <Card className="border-0 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Emergency Alerts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {activeAlerts.length === 0 && acknowledgedAlerts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Shield className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No active alerts</p>
-                  <p className="text-xs">All tourists are safe</p>
-                </div>
-              ) : (
-                <>
-                  {activeAlerts.map((alert) => (
-                    <div key={alert.id} className="p-3 border border-red-200 bg-red-50/50 rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <Badge className="bg-red-500/10 text-red-700 border-red-200 mb-1">
+          {/* Right Column - Safety Zones & Alerts */}
+          <div className="space-y-4">
+            {/* Safety Zones Manager */}
+            <div className="h-[250px]">
+              <SafetyZonesManager 
+                selectedLocation={selectedLocation}
+                onZoneSelect={(zone) => {
+                  if (zone.center_lat && zone.center_lng) {
+                    setSelectedLocation({ lat: zone.center_lat, lng: zone.center_lng });
+                  }
+                }}
+              />
+            </div>
+
+            {/* Compact Alerts Panel */}
+            <Card className="border-0 bg-card/80 backdrop-blur-sm h-[200px]">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <AlertTriangle className="w-4 h-4" />
+                  Emergency Alerts ({activeAlertsCount})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[140px] overflow-y-auto">
+                {activeAlerts.length === 0 && acknowledgedAlerts.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Shield className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                    <p className="text-sm">No active alerts</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {[...activeAlerts, ...acknowledgedAlerts].slice(0, 3).map((alert) => (
+                      <div key={alert.id} className={`p-2 border rounded-lg text-xs ${
+                        alert.status === 'active' ? 'border-red-200 bg-red-50/50' : 'border-amber-200 bg-amber-50/50'
+                      }`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <Badge className={`text-xs ${
+                            alert.status === 'active' ? 'bg-red-500/10 text-red-700' : 'bg-amber-500/10 text-amber-700'
+                          }`}>
                             {alert.alert_type}
                           </Badge>
-                          <p className="text-sm font-medium">Emergency Alert</p>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(alert.created_at).toLocaleTimeString()}
+                          </span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(alert.created_at).toLocaleTimeString()}
-                        </div>
-                      </div>
-                      
-                      {alert.message && (
-                        <p className="text-sm text-muted-foreground mb-3">{alert.message}</p>
-                      )}
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAcknowledgeAlert(alert.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <Phone className="w-3 h-3" />
-                          Respond
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleResolveAlert(alert.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <Shield className="w-3 h-3" />
-                          Resolve
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {acknowledgedAlerts.map((alert) => (
-                    <div key={alert.id} className="p-3 border border-amber-200 bg-amber-50/50 rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <Badge className="bg-amber-500/10 text-amber-700 border-amber-200 mb-1">
-                            In Progress
-                          </Badge>
-                          <p className="text-sm font-medium">{alert.alert_type}</p>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(alert.acknowledged_at || alert.created_at).toLocaleTimeString()}
+                        <div className="flex gap-1">
+                          {alert.status === 'active' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAcknowledgeAlert(alert.id)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              Respond
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleResolveAlert(alert.id)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            Resolve
+                          </Button>
                         </div>
                       </div>
-                      
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleResolveAlert(alert.id)}
-                        className="flex items-center gap-1"
-                      >
-                        <Shield className="w-3 h-3" />
-                        Mark Resolved
-                      </Button>
-                    </div>
-                  ))}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Quick Actions */}
